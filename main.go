@@ -1,8 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net/http"
+	"net/http/httputil"
 	"os"
 )
 
@@ -12,10 +13,18 @@ func main() {
 		port = "8080"
 	}
 
+	proxy := &httputil.ReverseProxy{
+		Director: func(req *http.Request) {},
+	}
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "404Proxy is running!")
+		if r.Method == http.MethodConnect {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		proxy.ServeHTTP(w, r)
 	})
 
-	fmt.Println("Listening on", port)
-	http.ListenAndServe(":"+port, nil)
+	log.Println("Listening on", port)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
